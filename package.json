@@ -1,0 +1,12 @@
+{
+  "name": "Css Sprite",
+  "version": "1.0.0",
+  "description": "This is for css sprite",
+  "author": "Devin",
+  "license": "ISC",
+  "devDependencies": {
+  },
+  "dependencies": {
+    "images": "^2.1.11"
+  }
+}
