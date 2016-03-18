@@ -1,9 +1,10 @@
 var images = require("images"),
 	fs = require("fs"),
+	path = require("path"),
 	Config = require("./config").Config;
 
 
-imageSprite(Config.src, Config.opts);
+imageSprite(path.normalize(Config.src), Config.opts);
 
 function imageSprite(src, opts) {
 
@@ -19,17 +20,17 @@ function imageSprite(src, opts) {
 		sumW: 0,
 		sumH: 0,
 		outName: opts.name,	// out file's name
-		outDir: opts.out && opts.out != "" ? opts.out : src // out file's dir
+		outDir: opts.out && opts.out != "" ? path.normalize(opts.out) : src // out file's dir
 	}
 
 	// check every file or dir
 	files.forEach(function(f) {
 
-		var fpath = src +"/"+ f;
+		var fpath = path.join(src, f);
 
 		if (fs.statSync(fpath).isDirectory()) {
 			// handle the directory
-			imageSprite(fpath + "/", Config.opts);
+			imageSprite(fpath, Config.opts);
 
 		}else if (fs.statSync(fpath).isFile()){
 			// handle the images, 
@@ -65,21 +66,46 @@ function imageSprite(src, opts) {
 				S.imgs.forEach(function(img){
 					dest.draw(img, x, y);
 					y += img.h;
-				})
+				}) 
 
 				break;
 			}
 		}
 
 		if (!S.outName || S.outName == "") {
-			S.outName = S.path.replace(/\/$/gi, "").replace(/\/+/gi, "-");
+			console.log(S.path);
+			S.outName = S.path.replace(/\\+/gi, "-");
 		}
 
-		var outFieName = S.outDir + "/" + S.outName + ".png";
+		if (!fs.existsSync(S.outDir)) {
+			mkdirsSync(S.outDir);
+		}
+		var outFieName = path.join(S.outDir, S.outName + ".png");
 		dest.save(outFieName);
 
 		console.log("Output file: " + outFieName);
 
 		
 	}
+}
+
+//创建多层文件夹 同步
+function mkdirsSync(dirpath, mode) { 
+    if (!fs.existsSync(dirpath)) {
+        var pathtmp;
+        dirpath.split(path.sep).forEach(function(dirname) {
+            if (pathtmp) {
+                pathtmp = path.join(pathtmp, dirname);
+            }
+            else {
+                pathtmp = dirname;
+            }
+            if (!fs.existsSync(pathtmp)) {
+                if (!fs.mkdirSync(pathtmp, mode)) {
+                    return false;
+                }
+            }
+        });
+    }
+    return true; 
 }
