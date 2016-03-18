@@ -16,6 +16,8 @@ function imageSprite(src, opts) {
 		imgs: [],			// image array
 		maxW: 0,			// max width
 		maxH: 0,			// max height
+		sumW: 0,
+		sumH: 0,
 		outName: opts.name,	// out file's name
 		outDir: opts.out && opts.out != "" ? opts.out : src // out file's dir
 	}
@@ -33,8 +35,11 @@ function imageSprite(src, opts) {
 			// handle the images, 
 			// get the max width and height for all images in this dir
 			var img = images(fpath);
-			S.maxW = S.maxW > img.width() ? S.maxW : img.width();
-			S.maxH = S.maxH > img.height() ? S.maxH : img.height();
+			img.w = img.width(), img.h = img.height();
+			S.maxW = S.maxW > img.w ? S.maxW : img.w;
+			S.maxH = S.maxH > img.h ? S.maxH : img.h;
+			S.sumW += img.width();
+			S.sumH += img.h;
 
 			S.imgs.push(img);
 		}
@@ -46,20 +51,20 @@ function imageSprite(src, opts) {
 		switch (opts.direction){
 			case "H": 
 
-				dest = images(S.maxW * S.imgs.length, S.maxH);
+				dest = images(S.sumW, S.maxH);
 				S.imgs.forEach(function(img){
 					dest.draw(img, x, y);
-					x += img.width();
+					x += img.w;
 				})
 
 				break;
 			
 			case "V": {
 
-				dest = images(S.maxW, S.maxH * S.imgs.length);
+				dest = images(S.maxW, S.sumH);
 				S.imgs.forEach(function(img){
 					dest.draw(img, x, y);
-					y += img.height();
+					y += img.h;
 				})
 
 				break;
