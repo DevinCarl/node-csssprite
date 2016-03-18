@@ -57,7 +57,6 @@ function imageSprite(src, opts) {
 					dest.draw(img, x, y);
 					x += img.w;
 				})
-
 				break;
 			
 			case "V": {
@@ -67,7 +66,6 @@ function imageSprite(src, opts) {
 					dest.draw(img, x, y);
 					y += img.h;
 				}) 
-
 				break;
 			}
 		}
