@@ -44,7 +44,7 @@ function imageSprite(opts) {
 	var files = fs.readdirSync(opts.src);
 	if (files.length <= 0) { return };
 
-	console.log(opts);
+	// console.log(opts);
 
 	var S = {
 		path: opts.src,
@@ -78,7 +78,9 @@ function imageSprite(opts) {
 				console.log(e);
 				return
 			}
-			img.w = img.width(), img.h = img.height();
+			img.w = img.width();
+			img.h = img.height();
+			img.name = path.basename(f, path.extname(f));
 			S.maxW = S.maxW > img.w ? S.maxW : img.w;
 			S.maxH = S.maxH > img.h ? S.maxH : img.h;
 			S.sumW += img.width();
@@ -90,42 +92,68 @@ function imageSprite(opts) {
 
 	// if exist images in this dir
 	if (S.imgs.length >=1) {
+
 		var dest, x = y = 0;
 		switch (opts.direction){
 			case "H": 
 			case "h":
 			case "horizontal": {
-
-				dest = images(S.sumW, S.maxH);
-				S.imgs.forEach(function(img){
-					dest.draw(img, x, y);
-					x += img.w;
-				})
+				S.outW = S.sumW;
+				S.outH = S.maxH;
+				S.horizontal = true;
 				break;
 			}
 			
 			case "V":
 			case "v":
 			case "vertical": {
-
-				dest = images(S.maxW, S.sumH);
-				S.imgs.forEach(function(img){
-					dest.draw(img, x, y);
-					y += img.h;
-				}) 
+				S.outW = S.maxW;
+				S.outH = S.sumH;
+				S.horizontal = false;
 				break;
 			}
 		}
-
+		// hand the out dir and name
 		if (!S.outName || S.outName == "") {
 			S.outName = S.path.replace(/\\+/gi, "-");
+			S.outExt = path.extname(S.outName);
+			S.outExt || (S.outExt = ".png")
 		}
-
 		if (!fs.existsSync(S.outDir)) {
 			mkdirsSync(S.outDir);
 		}
-		var outFieName = path.join(S.outDir, S.outName + ".png");
+
+		var cssString = ["." + S.outName + "{",
+				"display: inline-block;",
+				"vertical-align: top;",
+				"background: url(" + S.outName + S.outExt + ")",
+				"0 0",
+				"no-repeat", 
+				";}"];
+
+		dest = images(S.outW, S.outH);
+		S.imgs.forEach(function(img){
+			dest.draw(img, x, y);
+			img.x = x;
+			img.y = y;
+
+			S.horizontal ? (x += img.w) : (y += img.h);
+
+			var cssItem = ["." + S.outName + "." + img.name + " {",
+				"background-image:", 
+				img.x == 0 ? 0 : ((-1) * img.x + "px"),
+				img.y == 0 ? 0 : ((-1) * img.y + "px"), 
+				";}"];
+			cssString = cssString.concat(cssItem);
+		})
+		console.log(cssString.join(" "));
+
+
+		var outFieName = path.join(S.outDir, S.outName + S.outExt);
+		console.log(outFieName);
 		dest.save(outFieName);
+
+		fs.writeFile(path.join(S.outDir, S.outName + ".css"), cssString.join(" "));
 
 		console.log("Success! Output file: " + outFieName);
 
