@@ -11,6 +11,7 @@ var default_opts = {
 	h: 0								// single icon's height
 }
 
+
 // get the command line arguments
 var config = commamder(process.argv);
 
