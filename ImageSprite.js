@@ -92,7 +92,6 @@ function imageSprite(opts) {
 			}
 
 			if (opts.w && opts.w > 0 && opts.h && opts.h > 0) {
-				console.log("same size!", S.width, S.height);
 
 				var imgT = images(S.width, S.height);
 				var sx = (S.width - img.width())/2,
@@ -245,5 +244,3 @@ function writeAllCss(opts) {
 		console.log(outdir, path.join(outdir, "All-CSS.css"));
 	}
 }
-
-console.log(path.extname("a.png"));
