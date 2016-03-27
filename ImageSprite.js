@@ -5,7 +5,7 @@ var images = require("images"),
 var default_opts = {
 	src: "icons",
 	direction: "H",					// H : horizontal / V: vertical
-	out: "css-sprite-dest",			// out file's path
+	out: "",			// out file's path
 	name: ""						// out file's name
 }
 
@@ -16,8 +16,11 @@ for (var i in config) {
 	default_opts[i] = config[i];
 }
 
+var all_css = [];
 // do image sprite
 imageSprite(default_opts);
+
+writeAllCss(default_opts);
 
 /******
   		@params: 
@@ -49,13 +52,15 @@ function imageSprite(opts) {
 	var S = {
 		path: opts.src,
 		imgs: [],			// image array
-		maxW: 0,			// max width
-		maxH: 0,			// max height
+		width: (opts.h && Number(opts.w)) || 0,	//width of max width of all imgs
+		height: (opts.w && Number(opts.h)) || 0,	//height of max height of all imgs
 		sumW: 0,
 		sumH: 0,
+		sameSize: false,
 		outName: opts.name,	// out file's name
-		outDir: opts.out && opts.out != "" ? path.normalize(opts.out) : opts.src // out file's dir
+		outDir: opts.out && opts.out != "" ? path.normalize(opts.out) : path.dirname(opts.src) // out file's dir
 	}
+
 
 	// check every file or dir
 	files.forEach(function(f) {
@@ -70,6 +75,10 @@ function imageSprite(opts) {
 			imageSprite(opts_tmp);
 
 		}else if (fs.statSync(fpath).isFile()){
+			if (!isImage(fpath)) {
+				console.log(fpath + " is not a image file");
+				return
+			}
 			// handle the images, 
 			// get the max width and height for all images in this dir
 			try{
@@ -78,17 +87,37 @@ function imageSprite(opts) {
 				console.log(e);
 				return
 			}
-			img.w = img.width();
-			img.h = img.height();
+
+			if (opts.w && opts.w > 0 && opts.h && opts.h > 0) {
+				console.log("same size!", S.width, S.height);
+
+				var imgT = images(S.width, S.height);
+				var sx = (S.width - img.width())/2,
+					sy = (S.height - img.height())/2;
+				imgT.draw(img, sx, sy);
+				img = imgT;
+
+				img.w = S.width;
+				img.h = S.height;
+			}else{
+				img.w = img.width();
+				img.h = img.height();
+				S.width = S.width > img.w ? S.width : img.w;
+				S.height = S.height > img.h ? S.height : img.h;
+			}
+
 			img.name = path.basename(f, path.extname(f));
-			S.maxW = S.maxW > img.w ? S.maxW : img.w;
-			S.maxH = S.maxH > img.h ? S.maxH : img.h;
-			S.sumW += img.width();
+
+			S.sumW += img.w;
 			S.sumH += img.h;
 
 			S.imgs.push(img);
 		}
 	})
+	// whether all images have the same size
+	if (S.sumW === S.imgs.length * S.width && S.sumH === S.imgs.length * S.height) {
+		S.sameSize = true;
+	}
 
 	// if exist images in this dir
 	if (S.imgs.length >=1) {
@@ -99,7 +128,7 @@ function imageSprite(opts) {
 			case "h":
 			case "horizontal": {
 				S.outW = S.sumW;
-				S.outH = S.maxH;
+				S.outH = S.height;
 				S.horizontal = true;
 				break;
 			}
@@ -107,7 +136,7 @@ function imageSprite(opts) {
 			case "V":
 			case "v":
 			case "vertical": {
-				S.outW = S.maxW;
+				S.outW = S.width;
 				S.outH = S.sumH;
 				S.horizontal = false;
 				break;
@@ -124,13 +153,14 @@ function imageSprite(opts) {
 		}
 
 		var cssString = ["." + S.outName + "{",
-				"display: inline-block;",
-				"vertical-align: top;",
-				"background: url(" + S.outName + S.outExt + ")",
-				"0 0",
-				"no-repeat", 
-				";}"];
+				"\tdisplay: inline-block;",
+				"\tvertical-align: top;",
+				"\tbackground: url(" + S.outName + S.outExt + ") " + "0 0 no-repeat;",
+				"}"];
 
+		if (S.sameSize) {
+			cssString.splice(1, 0, "\twidth: " + S.width + "px;", "\theight: " + S.height + "px;");
+		}
 		dest = images(S.outW, S.outH);
 		S.imgs.forEach(function(img){
 			dest.draw(img, x, y);
@@ -140,24 +170,25 @@ function imageSprite(opts) {
 			S.horizontal ? (x += img.w) : (y += img.h);
 
 			var cssItem = ["." + S.outName + "." + img.name + " {",
-				"background-image:", 
-				img.x == 0 ? 0 : ((-1) * img.x + "px"),
-				img.y == 0 ? 0 : ((-1) * img.y + "px"), 
-				";}"];
+				"\tbackground-position: " + (img.x == 0 ? "0 " : ((-1) * img.x + "px ")) + (img.y == 0 ? "0;" : ((-1) * img.y + "px;")), 
+				"}"];
+			if (!S.sameSize) {
+				cssItem.splice(1, 0, "\twidth: " + img.w + "px;", "\theight: " + img.h + "px;");
+			}
 			cssString = cssString.concat(cssItem);
 		})
-		console.log(cssString.join(" "));
 
 
 		var outFieName = path.join(S.outDir, S.outName + S.outExt);
 		console.log(outFieName);
 		dest.save(outFieName);
 
-		fs.writeFile(path.join(S.outDir, S.outName + ".css"), cssString.join(" "));
+		fs.writeFile(path.join(S.outDir, S.outName + ".css"), cssString.join("\n"));
+
+		all_css.push(cssString.join("\n"));
 
 		console.log("Success! Output file: " + outFieName);
 
-		
 	}
 }
 
@@ -196,3 +227,20 @@ function commamder(cmd){
 	}
 	return command;
 }
+
+function isImage(fpath) {
+		var imgFormate = {".png": true, ".jpg": true, ".gif": true};
+		if (imgFormate[path.extname(fpath)]) {
+			return true;
+		}
+		return false;
+}
+function writeAllCss(opts) {
+	if(all_css.length > 0){
+		outdir = opts.out && opts.out != "" ? path.normalize(opts.out) : opts.src;
+		fs.writeFile(path.join(outdir, "All-CSS.css"), all_css.join("\n\n"));
+		console.log(outdir, path.join(outdir, "All-CSS.css"));
+	}
+}
+
+console.log(path.extname("a.png"));
