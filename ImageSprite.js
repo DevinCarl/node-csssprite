@@ -4,9 +4,11 @@ var images = require("images"),
 
 var default_opts = {
 	src: "icons",
-	direction: "H",					// H : horizontal / V: vertical
-	out: "",			// out file's path
-	name: ""						// out file's name
+	direction: "H",			// H : horizontal / V: vertical
+	out: "",						// out file's path
+	name: "",						// out file's name
+	w: 0,								// single icon's width
+	h: 0								// single icon's height
 }
 
 // get the command line arguments
